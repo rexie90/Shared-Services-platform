@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────────
+// ENUMS
+// ───────────────────────────────
+
+enum Role {
+  ADMIN
+  SERVICE_LEADER
+  CLIENT
+}
+
+enum RequestStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ASSIGNED
+  IN_PROGRESS
+  PENDING_CLIENT_APPROVAL
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum ServiceCategory {
+  FINANCE
+  ACCOUNTING
+  HR
+  GOVERNMENT_RELATIONS
+  LEGAL
+  PROCUREMENT
+  MARKETING
+  BUSINESS_DEVELOPMENT
+}
+
+enum SLAPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ───────────────────────────────
+// MODELS
+// ───────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  fullName  String   @map("full_name")
+  role      Role
+  isActive  Boolean  @default(false) @map("is_active") // يحتاج موافقة Admin
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clientProfile ClientProfile?
+  leaderProfile ServiceLeaderProfile?
+  notifications Notification[]
+  sentMessages  ChatMessage[]         @relation("MessageSender")
+
+  @@map("users")
+}
+
+model ClientProfile {
+  id          String  @id @default(uuid())
+  userId      String  @unique @map("user_id")
+  companyName String  @map("company_name")
+  industry    String?
+  phone       String?
+
+  user     User      @relation(fields: [userId], references: [id])
+  requests Request[]
+
+  @@map("client_profiles")
+}
+
+model ServiceLeaderProfile {
+  id          String          @id @default(uuid())
+  userId      String          @unique @map("user_id")
+  department  ServiceCategory
+  bio         String?
+  maxCapacity Int             @default(10) @map("max_capacity")
+
+  user        User         @relation(fields: [userId], references: [id])
+  assignments Assignment[]
+
+  @@map("service_leader_profiles")
+}
+
+model Service {
+  id            String          @id @default(uuid())
+  name          String
+  nameAr        String          @map("name_ar")
+  description   String?
+  descriptionAr String?         @map("description_ar")
+  category      ServiceCategory
+  isActive      Boolean         @default(true) @map("is_active")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  requests  Request[]
+  cartItems CartItem[]
+
+  @@map("services")
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  clientId  String     @unique @map("client_id")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String @id @default(uuid())
+  cartId    String @map("cart_id")
+  serviceId String @map("service_id")
+
+  cart    Cart    @relation(fields: [cartId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@unique([cartId, serviceId])
+  @@map("cart_items")
+}
+
+model Request {
+  id            String        @id @default(uuid())
+  requestNumber String        @unique @map("request_number")
+  title         String
+  description   String?
+  scope         String?       // نطاق العمل
+  status        RequestStatus @default(DRAFT)
+  priority      SLAPriority   @default(MEDIUM)
+  serviceType   String        @map("service_type") // مرة واحدة / شهري / تعاقد
+  clientId      String        @map("client_id")
+  serviceId     String        @map("service_id")
+  dueDate       DateTime?     @map("due_date")
+  completedAt   DateTime?     @map("completed_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  client       ClientProfile @relation(fields: [clientId], references: [id])
+  service      Service       @relation(fields: [serviceId], references: [id])
+  assignment   Assignment?
+  deliverables Deliverable[]
+  documents    Document[]
+  slaTracking  SLATracking?
+  notifications Notification[]
+  chatMessages ChatMessage[]
+
+  @@index([status])
+  @@index([clientId])
+  @@index([createdAt])
+  @@map("requests")
+}
+
+model Assignment {
+  id         String   @id @default(uuid())
+  requestId  String   @unique @map("request_id")
+  leaderId   String   @map("leader_id")
+  notes      String?
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  request Request              @relation(fields: [requestId], references: [id])
+  leader  ServiceLeaderProfile @relation(fields: [leaderId], references: [id])
+
+  @@map("assignments")
+}
+
+model Deliverable {
+  id          String   @id @default(uuid())
+  requestId   String   @map("request_id")
+  title       String
+  description String?
+  fileUrl     String?  @map("file_url")
+  status      String   @default("PENDING") // PENDING / APPROVED / REJECTED
+  adminNote   String?  @map("admin_note")
+  submittedAt DateTime @default(now()) @map("submitted_at")
+
+  request Request @relation(fields: [requestId], references: [id])
+
+  @@map("deliverables")
+}
+
+model SLATracking {
+  id          String    @id @default(uuid())
+  requestId   String    @unique @map("request_id")
+  targetHours Int       @map("target_hours")
+  startedAt   DateTime  @default(now()) @map("started_at")
+  breachedAt  DateTime? @map("breached_at")
+  isBreached  Boolean   @default(false) @map("is_breached")
+
+  request Request @relation(fields: [requestId], references: [id])
+
+  @@map("sla_tracking")
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  requestId  String   @map("request_id")
+  name       String
+  fileUrl    String   @map("file_url")
+  fileType   String   @map("file_type")
+  fileSize   Int      @map("file_size")
+  uploadedBy String   @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  request Request @relation(fields: [requestId], references: [id])
+
+  @@map("documents")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  requestId String   @map("request_id")
+  senderId  String   @map("sender_id")
+  content   String
+  fileUrl   String?  @map("file_url")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  request Request @relation(fields: [requestId], references: [id])
+  sender  User    @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([requestId])
+  @@map("chat_messages")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  requestId String?  @map("request_id")
+  title     String
+  body      String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  request Request? @relation(fields: [requestId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  clientId    String   @map("client_id")
+  requestId   String?  @map("request_id")
+  amount      Decimal  @db.Decimal(10, 2)
+  status      String   @default("PENDING") // PENDING / PAID / CANCELLED
+  issuedAt    DateTime @default(now()) @map("issued_at")
+  paidAt      DateTime? @map("paid_at")
+
+  @@map("invoices")
+}
