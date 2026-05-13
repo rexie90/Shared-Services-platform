@@ -264,3 +264,28 @@ model Invoice {
 
   @@map("invoices")
 }
+
+model SystemSettings {
+  id                        String   @id @default(uuid())
+  clientReviewDays          Int      @default(1) @map("client_review_days")
+  maxConcurrentRequests     Int      @default(50) @map("max_concurrent_requests")
+
+  twoFactorForAdmins        Boolean  @default(false) @map("two_factor_for_admins")
+  encryptDataRoomFiles      Boolean  @default(false) @map("encrypt_data_room_files")
+  allowMultiDeviceLogin     Boolean  @default(false) @map("allow_multi_device_login")
+
+  notifyNewRequests         Boolean  @default(true) @map("notify_new_requests")
+  notifyUserApproval        Boolean  @default(true) @map("notify_user_approval")
+  notifyDailyActivityReport Boolean  @default(false) @map("notify_daily_activity_report")
+  notifySlaDelay            Boolean  @default(true) @map("notify_sla_delay")
+  notifyNewDataRoomFiles    Boolean  @default(true) @map("notify_new_data_room_files")
+
+  serviceLeaderPermissions  Json?    @map("service_leader_permissions")
+  clientManagerPermissions  Json?    @map("client_manager_permissions")
+  clientTeamPermissions     Json?    @map("client_team_permissions")
+
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
