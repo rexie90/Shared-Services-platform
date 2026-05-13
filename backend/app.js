@@ -9,6 +9,7 @@ import rateLimit from 'express-rate-limit'
 import { corsConfig }    from './core/config/cors.js'
 import { errorHandler }  from './core/middleware/error.middleware.js'
 
+
 import adminRoutes  from './admin/index.js'
 import clientRoutes from './client/index.js'
 import leaderRoutes from './service-leader/index.js'
@@ -41,6 +42,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/uploads', express.static('uploads'))
 
 // ── Routes ──────────────────────────────────────────────────
+
 app.use('/api/v1/admin',          adminRoutes)
 app.use('/api/v1/client',         clientRoutes)
 app.use('/api/v1/service-leader', leaderRoutes)
