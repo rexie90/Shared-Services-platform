@@ -7,7 +7,7 @@ import dashboardRoutes from "./dashboard/dashboard.routes.js";
 // import assignmentsRoutes  from './assignments/assignments.routes.js'
 // import deliverablesRoutes from './deliverables/deliverables.routes.js'
 // import chatRoutes         from './chat/chat.routes.js'
-// import slaRoutes          from './sla/sla.routes.js'
+import slaRoutes          from './sla/sla.routes.js'
 
 const router = Router();
 
@@ -19,6 +19,6 @@ router.use("/dashboard", dashboardRoutes);
 // router.use('/assignments',  assignmentsRoutes)
 // router.use('/deliverables', deliverablesRoutes)
 // router.use('/chat',         chatRoutes)
-// router.use('/sla',          slaRoutes)
+router.use('/sla',          slaRoutes)
 
 export default router;
