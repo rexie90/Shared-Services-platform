@@ -3,6 +3,7 @@ import { protect } from "../core/middleware/auth.middleware.js";
 import { requireRole } from "../core/middleware/rbac.middleware.js";
 import cartRoutes from "./cart/cart.routes.js";
 import marketplaceRoutes from "./marketplace/marketplace.routes.js";
+import dashboardRoutes from "./dashboard/dashboard.routes.js";
 
 // import authRoutes         from './auth/auth.routes.js'
 // import requestsRoutes     from './requests/requests.routes.js'
@@ -18,6 +19,7 @@ router.use(protect, requireRole("CLIENT"));
 
 router.use("/cart", cartRoutes);
 router.use("/marketplace", marketplaceRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 // router.use('/requests',      requestsRoutes)
 // router.use('/documents',     documentsRoutes)
